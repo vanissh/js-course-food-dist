@@ -177,36 +177,33 @@ window.addEventListener('DOMContentLoaded', () => {
             `
             form.insertAdjacentElement('afterend', statusMessage)
 
-            const request = new XMLHttpRequest()
-
-            request.open('POST', 'server.php')
-
-            /*  отправка данных в стандартном формате */
-
-            /*request.setRequestHeader('Content-type', 'multipart/form-data') - при использовании 
-                    XMLHttpRequest и formData одновременно нельзя устанавливать заголовки, это
-                    происходит автоматически */
-
             const formData = new FormData(form) //важно, чтобы был прописан атрибут name у input
-
 
             /* отправка данных в формате json*/
 
             const object = {}
             formData.forEach((value, key) => object[key] = value)
 
-
-            request.send(JSON.stringify(object))
-
-            request.addEventListener('load', () => {
-                if (request.status === 200){
-                    statusMessage.remove()
-                    showThanksModal(message.success)
-                    form.reset()
-                } else {
-                    showThanksModal(message.failure)
-                }
+            fetch('server.php', {
+                method: 'POST',
+                headers: {
+                    'Content-type' : 'application/json'
+                },
+                body: JSON.stringify(object)
             })
+            .then(data => {
+                if(data.status !== 200){
+                    throw new Error('Error')
+                }
+                return data.text()
+            })
+            .then(data => {
+                console.log(data)
+                showThanksModal(message.success)
+                statusMessage.remove()
+            })
+            .catch(() => showThanksModal(message.failure))
+            .finally(() => form.reset())
         })
     }
 
@@ -233,7 +230,6 @@ window.addEventListener('DOMContentLoaded', () => {
             closeModal()
         }, 2000)
     }
-
 })
 
 // Menu cards

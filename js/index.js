@@ -157,7 +157,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const forms = document.querySelectorAll('form')
 
-    forms.forEach(item => postData(item))
+    forms.forEach(item => bindPostData(item))
 
     const message = {
         loading: 'img/form/spinner.svg',
@@ -165,7 +165,23 @@ window.addEventListener('DOMContentLoaded', () => {
         failure: 'Что-то пошло не так...'
     }
 
-    function postData(form){
+    const postData = async (url, data) => {
+        const res = await fetch(url, { //ф-я, которую необходимо ждать
+            method: 'POST',
+            headers: {
+                'Content-type' : 'application/json'
+            },
+            body: data
+        });
+
+        if(!res.ok){
+            throw new Error(`Could not fetch ${url}, status: ${res.status}`)
+        }
+
+        return await res.json()
+    }
+
+    function bindPostData(form){
         form.addEventListener('submit', (e) => {
             e.preventDefault()
 
@@ -181,22 +197,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             /* отправка данных в формате json*/
 
-            const object = {}
-            formData.forEach((value, key) => object[key] = value)
+            const json = JSON.stringify(Object.fromEntries(formData.entries()))
 
-            fetch('server.php', {
-                method: 'POST',
-                headers: {
-                    'Content-type' : 'application/json'
-                },
-                body: JSON.stringify(object)
-            })
-            .then(data => {
-                if(data.status !== 200){
-                    throw new Error('Error')
-                }
-                return data.text()
-            })
+            postData('http://localhost:3000/requests', json)
             .then(data => {
                 console.log(data)
                 showThanksModal(message.success)
@@ -230,74 +233,53 @@ window.addEventListener('DOMContentLoaded', () => {
             closeModal()
         }, 2000)
     }
+
+    const getResources = async (url) => {
+        const res = await fetch(url)
+
+        if(!res.ok){
+            throw new Error(`Could not fetch ${url}, status: ${res.status}`)
+        }
+        return await res.json()
+    }
+
+    // Menu cards
+    const menuContainer = document.querySelector('.menu__field .container')
+    class MenuCard {
+        constructor({img, altimg, title, descr, price}, ...classes){
+            this.img = img,
+            this.alt = altimg,
+            this.title = title,
+            this.description = descr,
+            this.price = price,
+            this.classes = classes
+        }
+
+        render = () => {
+
+            const card = document.createElement('div')
+            card.classList.add(...this.classes)
+            card.innerHTML = `
+                <img src="${this.img}" alt="${this.alt}">
+                <h3 class="menu__item-subtitle">Меню "${this.title}"</h3>
+                <div class="menu__item-descr">${this.description}</div>
+                <div class="menu__item-divider"></div>
+                <div class="menu__item-price">
+                    <div class="menu__item-cost">Цена:</div>
+                    <div class="menu__item-total"><span>${this.price}</span> руб/день</div>
+                </div>
+            `
+            menuContainer.append(card)
+        }
+    }
+
+    getResources('http://localhost:3000/menu')
+    .then(data => data.forEach(obj => {
+        console.log(obj)
+        new MenuCard(obj, 'menu__item').render()
+    }))
+
 })
 
-// Menu cards
-const menuContainer = document.querySelector('.menu__field .container')
-class MenuCard {
-    constructor({img, alt, title, description, price}, ...classes){
-        this.img = img,
-        this.alt = alt,
-        this.title = title,
-        this.description = description,
-        this.price = price,
-        this.classes = classes
-    }
 
-    render = () => {
-
-        const card = document.createElement('div')
-        card.classList.add(...this.classes)
-        card.innerHTML = `
-            <img src="${this.img}" alt="${this.alt}">
-            <h3 class="menu__item-subtitle">Меню "${this.title}"</h3>
-            <div class="menu__item-descr">${this.description}</div>
-            <div class="menu__item-divider"></div>
-            <div class="menu__item-price">
-                <div class="menu__item-cost">Цена:</div>
-                <div class="menu__item-total"><span>${this.price}</span> руб/день</div>
-            </div>
-        `
-        menuContainer.append(card)
-    }
-}
-
-const vegyData = {
-    img: 'img/tabs/vegy.jpg',
-    alt: 'vegy',
-    title: 'Фитнес',
-    description: `Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих
-                овощей и фруктов. Продукт активных и здоровых людей. Это абсолютно новый продукт с оптимальной
-                ценой и высоким качеством!`,
-    price: 1145
-}
-
-const eliteData = {
-    img: 'img/tabs/elite.jpg',
-    alt: 'elite',
-    title: 'Премиум',
-    description: `В меню “Премиум” мы используем не только красивый дизайн упаковки, но
-                и качественное исполнение блюд.<br><br>Красная рыба, морепродукты, фрукты - ресторанное меню 
-                без похода в ресторан!`,
-    price: 2750
-}
-
-const postData = {
-    img: 'img/tabs/post.jpg',
-    alt: 'post',
-    title: 'Постное',
-    description: `Меню “Постное” - это тщательный подбор ингредиентов: полное отсутствие
-                продуктов животного происхождения, молоко из миндаля, овса, кокоса или гречки, правильное
-                количество белков за счет тофу и импортных вегетарианских стейков.`,
-    price: 2150
-}
-
-const vegyCard = new MenuCard(vegyData, 'menu__item', 'щищ')
-vegyCard.render()
-
-const eliteCard = new MenuCard(eliteData, 'menu__item')
-eliteCard.render()
-
-const postCard = new MenuCard(postData, 'menu__item')
-postCard.render()
 

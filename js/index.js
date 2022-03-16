@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     //Timer
 
-    const deadline = '2022-03-08',
+    const deadline = '2022-03-17',
         timer = document.querySelector('.timer'),
         daysEl = timer.querySelector('#days'),
         hoursEl = timer.querySelector('#hours'),
@@ -68,7 +68,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function setTimer (){
+    function setTimer (deadline){
         const {days, hours, minutes, seconds} = getTimeRemaining(deadline)
         
         daysEl.innerHTML = getZero(days)
@@ -84,14 +84,16 @@ window.addEventListener('DOMContentLoaded', () => {
     function timerUpdate () {
 
         let timerID = setInterval(() => {
-            setTimer()
+            setTimer(deadline)
             if(getTimeRemaining(deadline).t <= 0){
                 clearInterval(timerID)
+                setTimer(new Date())
+                
             }
         }, 1000)
     }
 
-    setTimer()
+    setTimer(deadline)
     timerUpdate()
 
     // Modal 
@@ -334,6 +336,123 @@ window.addEventListener('DOMContentLoaded', () => {
 
     switchSlides()
 
+    //calorie calculator
+
+    /* Формула расчета кбжу:
+
+        Формула для мужчин:
+        BMR = 88,36 + (13,4 × вес в кг) + (4,8 × рост в см) – (5,7 × возраст в годах).
+
+        Формула для женщин:
+        BMR = 447,6 + (9,2 × вес в кг) + (3,1 × рост в см) – (4,3 × возраст в годах).
+
+        Низкая активность – BMR умножить на 1,2.
+        Невысокая активность – BMR умножить на 1,375.
+        Умеренная активность – BMR умножить на 1,55.
+        Высокая активность –BMR умножить на 1,725.
+    */
+
+    const calcField = document.querySelector('.calculating__field'),
+        genderField = calcField.querySelector('#gender'),
+        genderItems = genderField.querySelectorAll('.calculating__choose-item'),
+        activityField = calcField.querySelector('#activity'),
+        activityItems = activityField.querySelectorAll('.calculating__choose-item'),
+        result = calcField.querySelector('.calculating__result span')
+
+    const activityDB = {
+        low: 1.2,
+        small: 1.375,
+        medium: 1.55,
+        high: 1.725
+    }
+
+    const userData = {
+        gender: 'female',
+        height: 170,
+        weight: 60,
+        age: 30,
+        activity: 1.375
+    }
+
+    const saveUserParamsToLS = () => {
+        localStorage.setItem('userParams', JSON.stringify(userData))
+    }
+
+    const verifyData = (value) => {
+        return value.replace(/[^\d]/g,'').substring(0, 3)
+    }
+
+    const setParams = (id, items, field) => {
+        items.forEach(item => item.classList.remove('calculating__choose-item_active'))
+        field.querySelector(`#${id}`).classList.add('calculating__choose-item_active')
+    }
+
+    const calcCalorie = () => {
+
+        calcField.addEventListener('input', e => {
+            let target = e.target
+
+            target.value = verifyData(target.value)
+
+            if(target.matches('#height') || target.matches('#weight') || target.matches('#age')){
+                userData[target.id] = target.value
+            }
+            saveUserParamsToLS()
+            initCalc()
+            
+        })
+
+        calcField.addEventListener('click', e => {
+            let target = e.target
+
+            if(target.matches('.calculating__choose-item')){
+                if(target.closest('#gender')){
+                    setParams(target.id, genderItems, genderField)
+
+                    userData.gender = target.id
+                } else if(target.closest('#activity')){
+                    setParams(target.id, activityItems, activityField)
+
+                    userData.activity = activityDB[target.id]
+                }
+            }
+            saveUserParamsToLS()
+            initCalc()
+        })
+
+    }
+
+    const getCalorieIntake = ({gender, height, weight, age, activity}) => {
+        let calorieIntake
+
+        if(gender === 'female'){
+            calorieIntake = (447.6 + 9.2 * weight + 3.1 * height - 4.3 * age) * activity
+        } else if(gender === 'male'){
+            calorieIntake = (88.36 + 13.4 * weight + 4.8 * height - 5.7 * age) * activity
+        }
+
+        return Math.floor(calorieIntake)
+    }
+
+    const initCalc = () => {
+        if(localStorage.getItem('userParams')){
+            for(let key in userData){
+                userData[key] = JSON.parse(localStorage.getItem('userParams'))[key]
+            }
+            const activityID = Object.entries(activityDB)
+                .filter(item => item[1] === userData.activity)[0][0]
+            
+            setParams(userData.gender, genderItems, genderField)
+            setParams(activityID, activityItems, activityField)
+            result.textContent = getCalorieIntake(userData)
+        } else {
+            result.textContent = getCalorieIntake(userData) 
+        }
+    }
+
+    initCalc()
+    calcCalorie()
+    
 })
 
 

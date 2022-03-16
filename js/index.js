@@ -200,8 +200,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const json = JSON.stringify(Object.fromEntries(formData.entries()))
 
             postData('http://localhost:3000/requests', json)
+            // axios.post('http://localhost:3000/requests', json)
             .then(data => {
-                console.log(data)
                 showThanksModal(message.success)
                 statusMessage.remove()
             })
@@ -273,11 +273,66 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    getResources('http://localhost:3000/menu')
-    .then(data => data.forEach(obj => {
-        console.log(obj)
+    //getResources('http://localhost:3000/menu')
+    axios.get('http://localhost:3000/menu')
+    .then(data => data.data.forEach(obj => {
         new MenuCard(obj, 'menu__item').render()
     }))
+
+    //Слайдер
+
+    const offerSlider = document.querySelector('.offer__slider'),
+        currentSlide = document.getElementById('current'),
+        totalOfSlides = document.getElementById('total'),
+        slides = offerSlider.querySelectorAll('.offer__slide'),
+        total = slides.length
+
+    let activeSlider = 0
+    totalOfSlides.textContent = getZero(total)
+    
+
+    const hideOfferSlider = () => {
+        slides.forEach(item => {
+            item.classList.remove('show', 'fade')
+            item.classList.add('hide')})
+    }
+
+    const showOfferSlider = (i) => {
+        slides[i].classList.remove('hide')
+        slides[i].classList.add('show', 'fade')
+        currentSlide.textContent = getZero(i+1)
+    }
+
+    const switchSlides = () => {
+
+        offerSlider.addEventListener('click', (e) => {
+            let target = e.target
+
+            if(target.closest('.offer__slider-next')){
+                activeSlider++
+                if(activeSlider >= total){
+                    activeSlider = 0
+                }
+                hideOfferSlider()
+                showOfferSlider(activeSlider)
+            }
+
+            if(target.closest('.offer__slider-prev')){
+                activeSlider--
+                if(activeSlider < 0){
+                    activeSlider = total - 1
+                }
+                hideOfferSlider()
+                showOfferSlider(activeSlider)
+            }
+        })
+    }
+
+    hideOfferSlider()
+
+    showOfferSlider(activeSlider)
+
+    switchSlides()
 
 })
 
